@@ -10,9 +10,10 @@ public:
   } state;
   Terminal();
   ~Terminal();
-  void editorRefreshScreen() const;
+  void editorRefreshScreen();
   int getWindowSize();
 
 private:
-  void editorDrawRows() const;
+  void editorDrawRows();
+  int getCursorPosition();
 };

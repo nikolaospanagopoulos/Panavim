@@ -10,6 +10,7 @@ int main() {
 
   try {
     Terminal terminal;
+    terminal.getWindowSize();
 
     std::string inputBuffer;
     MODE mode = NORMAL; // Start in NORMAL mode, similar to Vim's default mode
@@ -24,11 +25,9 @@ int main() {
         if (mode == NORMAL) {
           if (c == 'i') { // 'i' to enter INPUT mode
             mode = INPUT;
-            std::cout << "Entered input mode\r\n" << std::flush;
 
           } else if (c == ':') { // ':' to enter COMMAND mode
             mode = COMMAND;
-            std::cout << "entered command mode\r\n";
             inputBuffer.clear(); // Prepare for command input
           }
           // Normal mode key handling (navigation, etc.) goes here
@@ -36,7 +35,6 @@ int main() {
 
           if (c == 27) { // ESC returns to NORMAL mode
             mode = NORMAL;
-            std::cout << "Entered normal mode\r\n";
           } else {
             // Handle text input in INPUT mode
             if (std::iscntrl(c)) {
@@ -49,7 +47,6 @@ int main() {
 
           if (c == 27) { // ESC returns to NORMAL mode
             mode = NORMAL;
-            std::cout << "Entered normal mode\r\n";
           }
           if (c == '\r' || c == '\n') { // Enter processes the command
             if (inputBuffer == "q") {
@@ -64,7 +61,7 @@ int main() {
       }
     }
   } catch (const std::runtime_error &e) {
-    std::cerr << e.what() << "\n";
+    std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
   }
 
