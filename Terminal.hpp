@@ -3,10 +3,16 @@
 #include <unistd.h>
 class Terminal {
 public:
+  struct editorState {
+    int screenRows;
+    int screenCols;
+    struct termios originalTermios;
+  } state;
   Terminal();
   ~Terminal();
-  void editorDrawRows();
+  void editorRefreshScreen() const;
+  int getWindowSize();
 
 private:
-  struct termios originalTermios;
+  void editorDrawRows() const;
 };
