@@ -31,6 +31,14 @@ int main() {
             inputBuffer.clear(); // Prepare for command input
           }
           // Normal mode key handling (navigation, etc.) goes here
+          switch (c) {
+          case 'k':
+          case 'j':
+          case 'l':
+          case 'h':
+            terminal.moveCursor(c);
+            break;
+          }
         } else if (mode == INPUT) {
 
           if (c == 27) { // ESC returns to NORMAL mode

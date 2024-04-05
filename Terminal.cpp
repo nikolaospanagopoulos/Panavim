@@ -4,11 +4,14 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+#define EditorVersion 1
 
-Terminal::Terminal() : state({.screenRows = 0, .screenCols = 0}) {
+Terminal::Terminal()
+    : state({.cx = 0, .cy = 0, .screenRows = 0, .screenCols = 0}), buffer{""} {
   // get current terminal options
   if (tcgetattr(STDIN_FILENO, &state.originalTermios) == -1) {
     throw std::runtime_error("failed to get current terminal attributes");
@@ -27,28 +30,75 @@ Terminal::Terminal() : state({.screenRows = 0, .screenCols = 0}) {
     throw std::runtime_error("failed to set terminal attributes");
   }
 }
+void Terminal::moveCursor(char key) {
+  switch (key) {
+  case 'j':
+	  state.cy++;
+    break;
+  case 'k':
+	  state.cy--;
+    break;
+  case 'l':
+	  state.cx++;
+    break;
+  case 'h':
+	  state.cx--;
+    break;
+  }
+}
 void Terminal::editorRefreshScreen() {
 
   getWindowSize();
-  // refactor to std::flush
-  write(STDOUT_FILENO, "\x1b[2J", 4);
-  write(STDOUT_FILENO, "\x1b[H", 3);
+  // l command and argument 25 used to hide cursor
+  buffer.append("\x1b[?25l");
+  // K command -> erase each line
+  // H command -> reposition cursor at top left. default argument 1
+  buffer.append("\x1b[H");
   editorDrawRows();
-  write(STDOUT_FILENO, "\x1b[H", 3);
+  // H command -> reposition cursor
+  std::stringstream cursorStream{};
+  cursorStream << "\x1b[" << state.cy + 1 << ";" << state.cx + 1 << "H";
+  buffer.append(cursorStream.str());
+  // h command and argument 25 used to show cursor
+  buffer.append("\x1b[?25h");
+  // flush buffer on screen
+  std::cout << buffer << std::flush;
+  // empty it
+  buffer.clear();
 }
 
 void Terminal::editorDrawRows() {
   int y;
+  std::string welcomeMessage =
+      "Text editor -- version " + std::to_string(EditorVersion);
   for (y = 0; y < state.screenRows; y++) {
-    write(STDOUT_FILENO, "~", 1);
+    if (y == state.screenRows / 3) {
+      // put welcomeMessage in center
+      // devide screen width by two and then subtract half the string length to
+      // know where to start writing add spaces for the rest
+      int padding = (state.screenCols - welcomeMessage.length()) / 2;
+      if (padding) {
+        buffer.append("~");
+        padding--;
+      }
+      while (padding--) {
+        buffer.append(" ");
+      }
+
+      buffer.append(welcomeMessage);
+    } else {
+      buffer.append("~");
+    }
+    buffer.append("\x1b[K");
     if (y < state.screenRows - 1) {
-      write(STDOUT_FILENO, "\r\n", 2);
+      buffer.append("\r\n");
     }
   }
 }
 
 Terminal::~Terminal() {
   // restore old terminal config
+  buffer.clear();
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &state.originalTermios);
 }
 int Terminal::getWindowSize() {
