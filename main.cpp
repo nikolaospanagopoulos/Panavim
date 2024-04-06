@@ -6,14 +6,12 @@
 #include <unistd.h>
 
 int main() {
-  enum MODE { NORMAL, INPUT, COMMAND }; // Added NORMAL mode for clarity
 
   try {
     Terminal terminal;
     terminal.getWindowSize();
-
+    std::string normalModeBuffer{};
     std::string inputBuffer;
-    MODE mode = NORMAL; // Start in NORMAL mode, similar to Vim's default mode
 
     char c = '\0';
     // Cursor to home position again
@@ -23,13 +21,15 @@ int main() {
       terminal.editorRefreshScreen();
       if (read(STDIN_FILENO, &c, 1) == 1) {
         c = terminal.editorCheckForKey(c);
-        if (mode == NORMAL) {
+        if (terminal.state.terminalMode == Terminal::NORMAL) {
+          terminal.state.commandBuffer += c;
           if (c == 'i') { // 'i' to enter INPUT mode
-            mode = INPUT;
+            terminal.state.terminalMode = Terminal::INPUT;
+            terminal.enterInputMode();
             inputBuffer.clear(); // Prepare for command input
 
           } else if (c == ':') { // ':' to enter COMMAND mode
-            mode = COMMAND;
+            terminal.state.terminalMode = Terminal::COMMAND;
             inputBuffer.clear(); // Prepare for command input
           }
           // Normal mode key handling (navigation, etc.) goes here
@@ -41,23 +41,33 @@ int main() {
             terminal.moveCursor(c);
             break;
           }
-        } else if (mode == INPUT) {
+          if (!terminal.couldBeCommand(terminal.state.commandBuffer,
+                                       std::vector<std::string>{"gg", "G"})) {
+            terminal.state.commandBuffer.clear();
+          }
+          terminal.executeCommand(terminal.state.commandBuffer);
+
+          if (c == 27) {
+            terminal.state.commandBuffer.clear();
+          }
+        } else if (terminal.state.terminalMode == Terminal::INPUT) {
 
           if (c == 27) { // ESC returns to NORMAL mode
-            mode = NORMAL;
+            terminal.state.terminalMode = Terminal::NORMAL;
+            terminal.exitInputMode();
           } else {
             // Handle text input in INPUT mode
           }
-        } else if (mode == COMMAND) {
+        } else if (terminal.state.terminalMode == Terminal::COMMAND) {
 
           if (c == 27) { // ESC returns to NORMAL mode
-            mode = NORMAL;
+            terminal.state.terminalMode = Terminal::NORMAL;
           }
           if (c == '\r' || c == '\n') { // Enter processes the command
             if (inputBuffer == "q") {
               break; // Exit if 'q' is entered
             }
-            mode = NORMAL; // Return to NORMAL mode after command execution
+            terminal.state.terminalMode = Terminal::NORMAL;
             inputBuffer.clear();
           } else {
             inputBuffer += c; // Accumulate command characters
