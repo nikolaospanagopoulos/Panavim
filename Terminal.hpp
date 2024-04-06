@@ -26,16 +26,18 @@ public:
   char editorCheckForKey(const char &key) const;
   void enterInputMode() const;
   void exitInputMode() const;
-  void scrollUp();
-  void scrollDown();
   void executeCommand(const std::string &command);
   bool couldBeCommand(const std::string &buffer,
                       const std::vector<std::string> &commandList);
 
 private:
+  void goToBeginningOfLine();
+  void goToTheEndOfLine();
   std::unordered_map<std::string, CommandHandler> commandHandlers;
   void registerCommand(const std::string &command, CommandHandler handler);
   std::string buffer;
   void editorDrawRows();
   int getCursorPosition();
+  void scrollUp();
+  void scrollDown();
 };

@@ -33,6 +33,9 @@ bool Terminal::couldBeCommand(const std::string &buffer,
   return false;
 }
 
+void Terminal::goToTheEndOfLine() { state.cx = state.screenCols - 1; }
+void Terminal::goToBeginningOfLine() { state.cx = 0; }
+
 Terminal::Terminal()
     : state({.cx = 0,
              .cy = 0,
@@ -60,6 +63,8 @@ Terminal::Terminal()
   }
   registerCommand("gg", [](Terminal &term) { term.scrollUp(); });
   registerCommand("G", [](Terminal &term) { term.scrollDown(); });
+  registerCommand("_", [](Terminal &term) { term.goToBeginningOfLine(); });
+  registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
 }
 void Terminal::scrollUp() {
   int times = state.screenRows;
