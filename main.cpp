@@ -22,9 +22,11 @@ int main() {
     while (true) {
       terminal.editorRefreshScreen();
       if (read(STDIN_FILENO, &c, 1) == 1) {
+        c = terminal.editorCheckForKey(c);
         if (mode == NORMAL) {
           if (c == 'i') { // 'i' to enter INPUT mode
             mode = INPUT;
+            inputBuffer.clear(); // Prepare for command input
 
           } else if (c == ':') { // ':' to enter COMMAND mode
             mode = COMMAND;
@@ -45,11 +47,6 @@ int main() {
             mode = NORMAL;
           } else {
             // Handle text input in INPUT mode
-            if (std::iscntrl(c)) {
-              std::cout << static_cast<int>(c) << "\r\n";
-            } else {
-              std::cout << static_cast<int>(c) << " ('" << c << "')\r\n";
-            }
           }
         } else if (mode == COMMAND) {
 

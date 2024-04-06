@@ -30,19 +30,50 @@ Terminal::Terminal()
     throw std::runtime_error("failed to set terminal attributes");
   }
 }
-void Terminal::moveCursor(char key) {
+char Terminal::editorCheckForKey(const char &key) const {
+  if (key == '\x1b') {
+    char seq[3]{};
+    if (read(STDIN_FILENO, &seq[0], 1) != 1) {
+      return '\x1b';
+    }
+    if (read(STDIN_FILENO, &seq[1], 1) != 1) {
+      return '\x1b';
+    }
+    if (seq[0] == '[') {
+      switch (seq[1]) {
+      case 'A':
+        return 'k';
+      case 'B':
+        return 'j';
+      case 'C':
+        return 'l';
+      case 'D':
+        return 'h';
+      }
+    }
+    return '\x1b';
+  } else {
+    return key;
+  }
+}
+
+void Terminal::moveCursor(const int key) {
   switch (key) {
+  case editorKey::ARROW_DOWN:
   case 'j':
-	  state.cy++;
+    state.cy++;
     break;
+  case editorKey::ARROW_UP:
   case 'k':
-	  state.cy--;
+    state.cy--;
     break;
+  case editorKey::ARROW_RIGHT:
   case 'l':
-	  state.cx++;
+    state.cx++;
     break;
+  case editorKey::ARROW_LEFT:
   case 'h':
-	  state.cx--;
+    state.cx--;
     break;
   }
 }
