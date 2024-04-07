@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 #include <functional>
 #include <string>
 #include <termios.h>
@@ -17,6 +18,8 @@ public:
     struct termios originalTermios;
     MODE terminalMode;
     std::string commandBuffer;
+    int numRow;
+    std::vector<std::string> textRows;
   } state;
   Terminal();
   ~Terminal();
@@ -29,8 +32,11 @@ public:
   void executeCommand(const std::string &command);
   bool couldBeCommand(const std::string &buffer,
                       const std::vector<std::string> &commandList);
+  void editorOpen(const char *fileName);
 
 private:
+  void editorAppendRow(const std::string &row);
+  std::ifstream inFile;
   void goToBeginningOfLine();
   void goToTheEndOfLine();
   std::unordered_map<std::string, CommandHandler> commandHandlers;

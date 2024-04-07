@@ -10,6 +10,19 @@
 #include <unistd.h>
 #define EditorVersion 1
 
+void Terminal::editorOpen(const char *fileName) {
+  inFile.open(fileName);
+  if (!inFile) {
+    throw std::runtime_error("failed to get open file");
+  }
+  std::string line = {};
+  while (std::getline(inFile, line)) {
+    // put the string in the vector. don't copy it
+    state.textRows.emplace_back(std::move(line));
+    state.numRow++;
+  }
+}
+
 void Terminal::registerCommand(const std::string &command,
                                CommandHandler handler) {
   commandHandlers[command] = handler;
@@ -42,8 +55,10 @@ Terminal::Terminal()
              .screenRows = 0,
              .screenCols = 0,
              .terminalMode = NORMAL,
-             .commandBuffer = {}}),
-      buffer{""} {
+             .commandBuffer = {},
+             .numRow = 0,
+             .textRows = {}}),
+      buffer{""}, inFile{} {
   // get current terminal options
   if (tcgetattr(STDIN_FILENO, &state.originalTermios) == -1) {
     throw std::runtime_error("failed to get current terminal attributes");
@@ -160,22 +175,27 @@ void Terminal::editorDrawRows() {
   std::string welcomeMessage =
       "Text editor -- version " + std::to_string(EditorVersion);
   for (y = 0; y < state.screenRows; y++) {
-    if (y == state.screenRows / 3) {
-      // put welcomeMessage in center
-      // devide screen width by two and then subtract half the string length to
-      // know where to start writing add spaces for the rest
-      int padding = (state.screenCols - welcomeMessage.length()) / 2;
-      if (padding) {
-        buffer.append("~");
-        padding--;
-      }
-      while (padding--) {
-        buffer.append(" ");
-      }
+    if (y >= state.numRow) {
 
-      buffer.append(welcomeMessage);
+      if (y == 0 && y == state.screenRows / 3) {
+        // put welcomeMessage in center
+        // devide screen width by two and then subtract half the string length
+        // to know where to start writing add spaces for the rest
+        int padding = (state.screenCols - welcomeMessage.length()) / 2;
+        if (padding) {
+          buffer.append("~");
+          padding--;
+        }
+        while (padding--) {
+          buffer.append(" ");
+        }
+
+        buffer.append(welcomeMessage);
+      } else {
+        buffer.append("~");
+      }
     } else {
-      buffer.append("~");
+      buffer.append(state.textRows.at(y));
     }
     buffer.append("\x1b[K");
     if (y < state.screenRows - 1) {
@@ -188,6 +208,10 @@ void Terminal::enterInputMode() const { std::cout << "\x1b[6 q" << std::flush; }
 Terminal::~Terminal() {
   // restore old terminal config
   buffer.clear();
+  // close file
+  if (inFile) {
+    inFile.close();
+  }
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &state.originalTermios);
   // clear screen
   std::cout << "\x1b[2J" << std::flush;

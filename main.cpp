@@ -5,11 +5,15 @@
 #include <stdexcept>
 #include <unistd.h>
 
-int main() {
+int main(int argc, char *argv[]) {
 
   try {
     Terminal terminal;
+    if (argc >= 2) {
+      terminal.editorOpen(argv[1]);
+    }
     terminal.getWindowSize();
+
     std::string normalModeBuffer{};
     std::string inputBuffer;
 
