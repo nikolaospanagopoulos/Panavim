@@ -20,6 +20,8 @@ public:
     std::string commandBuffer;
     int numRow;
     std::vector<std::string> textRows;
+    int rowOffset;
+    int colOffset;
   } state;
   Terminal();
   ~Terminal();
@@ -46,4 +48,6 @@ private:
   int getCursorPosition();
   void scrollUp();
   void scrollDown();
+  void adjustRowOffset();
+  void appendRow(const std::string &row);
 };

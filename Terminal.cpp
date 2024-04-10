@@ -10,6 +10,26 @@
 #include <unistd.h>
 #define EditorVersion 1
 
+void Terminal::adjustRowOffset() {
+  if (state.cy < state.rowOffset) {
+    state.rowOffset = state.cy;
+  }
+  if (state.cy >= state.rowOffset + state.screenRows) {
+    state.rowOffset = state.cy - state.screenRows + 1;
+  }
+  if (state.cx < state.colOffset) {
+    state.colOffset = state.cx;
+  }
+  if (state.cx >= state.colOffset + state.screenCols) {
+    state.colOffset = state.cx - state.screenCols + 1;
+  }
+}
+
+void Terminal::appendRow(const std::string &row) {
+  state.textRows.push_back(std::move(row));
+  state.numRow++;
+}
+
 void Terminal::editorOpen(const char *fileName) {
   inFile.open(fileName);
   if (!inFile) {
@@ -18,8 +38,8 @@ void Terminal::editorOpen(const char *fileName) {
   std::string line = {};
   while (std::getline(inFile, line)) {
     // put the string in the vector. don't copy it
-    state.textRows.emplace_back(std::move(line));
-    state.numRow++;
+    // state.textRows.emplace_back(std::move(line));
+    appendRow(line);
   }
 }
 
@@ -57,7 +77,9 @@ Terminal::Terminal()
              .terminalMode = NORMAL,
              .commandBuffer = {},
              .numRow = 0,
-             .textRows = {}}),
+             .textRows = {},
+             .rowOffset = 0,
+             .colOffset = 0}),
       buffer{""}, inFile{} {
   // get current terminal options
   if (tcgetattr(STDIN_FILENO, &state.originalTermios) == -1) {
@@ -121,10 +143,14 @@ char Terminal::editorCheckForKey(const char &key) const {
 }
 
 void Terminal::moveCursor(const int key) {
+
+  // check if on an actual line
+  std::string *editorRow =
+      (state.cy >= state.numRow) ? nullptr : &state.textRows.at(state.cy);
   switch (key) {
   case editorKey::ARROW_DOWN:
   case 'j':
-    if (state.cy != state.screenRows - 1) {
+    if (state.cy < state.numRow) {
       state.cy++;
     }
     break;
@@ -136,7 +162,7 @@ void Terminal::moveCursor(const int key) {
     break;
   case editorKey::ARROW_RIGHT:
   case 'l':
-    if (state.cx != state.screenCols - 1) {
+    if (editorRow && state.cx < editorRow->size()) {
       state.cx++;
     }
     break;
@@ -147,9 +173,17 @@ void Terminal::moveCursor(const int key) {
     }
     break;
   }
+  editorRow =
+      (state.cy >= state.numRow) ? nullptr : &state.textRows.at(state.cy);
+  int rowSize = editorRow ? editorRow->size() : 0;
+  if (state.cx > rowSize) {
+    state.cx = rowSize;
+  }
 }
 void Terminal::exitInputMode() const { std::cout << "\x1b[2 q" << std::flush; }
 void Terminal::editorRefreshScreen() {
+
+  adjustRowOffset();
 
   getWindowSize();
   // l command and argument 25 used to hide cursor
@@ -160,8 +194,11 @@ void Terminal::editorRefreshScreen() {
   editorDrawRows();
   // H command -> reposition cursor
   std::stringstream cursorStream{};
-  cursorStream << "\x1b[" << state.cy + 1 << ";" << state.cx + 1 << "H";
-  buffer.append(cursorStream.str());
+
+  cursorStream << "\x1b[" << (state.cy - state.rowOffset) + 1 << ";"
+               << (state.cx - state.colOffset) + 1 << "H";
+
+  buffer.append(std::move(cursorStream.str()));
   // h command and argument 25 used to show cursor
   buffer.append("\x1b[?25h");
   // flush buffer on screen
@@ -175,9 +212,10 @@ void Terminal::editorDrawRows() {
   std::string welcomeMessage =
       "Text editor -- version " + std::to_string(EditorVersion);
   for (y = 0; y < state.screenRows; y++) {
-    if (y >= state.numRow) {
+    int filerow = y + state.rowOffset;
+    if (filerow >= state.numRow) {
 
-      if (y == 0 && y == state.screenRows / 3) {
+      if (state.numRow == 0 && y == state.screenRows / 3) {
         // put welcomeMessage in center
         // devide screen width by two and then subtract half the string length
         // to know where to start writing add spaces for the rest
@@ -195,7 +233,14 @@ void Terminal::editorDrawRows() {
         buffer.append("~");
       }
     } else {
-      buffer.append(state.textRows.at(y));
+      int len = state.textRows.at(filerow).size() - state.colOffset;
+      if (len < 0) {
+        len = 0;
+      }
+      if (len > state.screenCols) {
+        len = state.screenCols;
+      }
+      buffer.append(&state.textRows.at(filerow)[state.colOffset], len);
     }
     buffer.append("\x1b[K");
     if (y < state.screenRows - 1) {
