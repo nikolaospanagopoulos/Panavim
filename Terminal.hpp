@@ -5,6 +5,14 @@
 #include <termios.h>
 #include <unistd.h>
 #include <unordered_map>
+
+struct Row {
+  std::string textRow;
+  std::string renderedRow;
+  Row();
+  Row(const std::string textRow, const std::string renderedRow);
+};
+
 class Terminal {
 public:
   enum editorKey { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
@@ -19,7 +27,7 @@ public:
     MODE terminalMode;
     std::string commandBuffer;
     int numRow;
-    std::vector<std::string> textRows;
+    std::vector<Row> textRows;
     int rowOffset;
     int colOffset;
   } state;
@@ -37,7 +45,7 @@ public:
   void editorOpen(const char *fileName);
 
 private:
-  void editorAppendRow(const std::string &row);
+  void editorUpdateRow(Row &row);
   std::ifstream inFile;
   void goToBeginningOfLine();
   void goToTheEndOfLine();
@@ -49,5 +57,5 @@ private:
   void scrollUp();
   void scrollDown();
   void adjustRowOffset();
-  void appendRow(const std::string &row);
+  void appendRow(const std::string &line);
 };

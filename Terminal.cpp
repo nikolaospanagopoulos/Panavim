@@ -10,6 +10,10 @@
 #include <unistd.h>
 #define EditorVersion 1
 
+Row::Row() : textRow{}, renderedRow{} {}
+Row::Row(const std::string row, const std::string renderedRow)
+    : textRow{row}, renderedRow{} {}
+
 void Terminal::adjustRowOffset() {
   if (state.cy < state.rowOffset) {
     state.rowOffset = state.cy;
@@ -25,8 +29,35 @@ void Terminal::adjustRowOffset() {
   }
 }
 
-void Terminal::appendRow(const std::string &row) {
-  state.textRows.push_back(std::move(row));
+void Terminal::editorUpdateRow(Row &row) {
+  row.renderedRow.clear();
+  int tabsCount = 0;
+  for (const char &c : row.textRow) {
+    if (c == '\t') {
+      tabsCount++;
+    }
+  }
+  // each tab counted as one but we need 8 chars for a tab. multiplied by 7
+  // because textrow size already counts 1
+  row.renderedRow.resize(row.textRow.size() + tabsCount * 7 + 1);
+  int index = 0;
+  for (const char &c : row.textRow) {
+    if (c == '\t') {
+      row.renderedRow[index++] = ' ';
+      while (index % 8 != 0) {
+        row.renderedRow[index++] = ' ';
+      }
+    } else {
+      row.renderedRow[index++] = c;
+    }
+  }
+}
+
+void Terminal::appendRow(const std::string &line) {
+
+  Row row = Row{line, ""};
+  editorUpdateRow(row);
+  state.textRows.emplace_back(std::move(row));
   state.numRow++;
 }
 
@@ -145,8 +176,9 @@ char Terminal::editorCheckForKey(const char &key) const {
 void Terminal::moveCursor(const int key) {
 
   // check if on an actual line
-  std::string *editorRow =
-      (state.cy >= state.numRow) ? nullptr : &state.textRows.at(state.cy);
+  std::string *editorRow = (state.cy >= state.numRow)
+                               ? nullptr
+                               : &state.textRows.at(state.cy).textRow;
   switch (key) {
   case editorKey::ARROW_DOWN:
   case 'j':
@@ -164,17 +196,23 @@ void Terminal::moveCursor(const int key) {
   case 'l':
     if (editorRow && state.cx < editorRow->size()) {
       state.cx++;
+    } else if (editorRow && state.cx == editorRow->size()) {
+      state.cy++;
+      state.cx = 0;
     }
     break;
   case editorKey::ARROW_LEFT:
   case 'h':
     if (state.cx != 0) {
       state.cx--;
+    } else if (state.cy > 0) {
+      state.cy--;
+      state.cx = state.textRows.at(state.cy).textRow.size();
     }
     break;
   }
-  editorRow =
-      (state.cy >= state.numRow) ? nullptr : &state.textRows.at(state.cy);
+  editorRow = (state.cy >= state.numRow) ? nullptr
+                                         : &state.textRows.at(state.cy).textRow;
   int rowSize = editorRow ? editorRow->size() : 0;
   if (state.cx > rowSize) {
     state.cx = rowSize;
@@ -233,14 +271,15 @@ void Terminal::editorDrawRows() {
         buffer.append("~");
       }
     } else {
-      int len = state.textRows.at(filerow).size() - state.colOffset;
+      int len = state.textRows.at(filerow).renderedRow.size() - state.colOffset;
       if (len < 0) {
         len = 0;
       }
       if (len > state.screenCols) {
         len = state.screenCols;
       }
-      buffer.append(&state.textRows.at(filerow)[state.colOffset], len);
+      buffer.append(&state.textRows.at(filerow).renderedRow[state.colOffset],
+                    len);
     }
     buffer.append("\x1b[K");
     if (y < state.screenRows - 1) {
