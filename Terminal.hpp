@@ -21,6 +21,7 @@ public:
   struct editorState {
     int cx;
     int cy;
+    int rx;
     int screenRows;
     int screenCols;
     struct termios originalTermios;
@@ -58,4 +59,5 @@ private:
   void scrollDown();
   void adjustRowOffset();
   void appendRow(const std::string &line);
+  int cxTorx(Row &row, int cx);
 };

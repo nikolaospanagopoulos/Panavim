@@ -14,18 +14,35 @@ Row::Row() : textRow{}, renderedRow{} {}
 Row::Row(const std::string row, const std::string renderedRow)
     : textRow{row}, renderedRow{} {}
 
+int Terminal::cxTorx(Row &row, int cx) {
+  int rx = 0;
+  for (int j = 0; j < cx; j++) {
+    if (row.textRow.at(j) == '\t') {
+      rx += (8 - 1) - (rx % 8);
+    }
+    rx++;
+  }
+  return rx;
+}
+
 void Terminal::adjustRowOffset() {
+  state.rx = 0;
+
+  if (state.cy < state.numRow) {
+    state.rx = cxTorx(state.textRows.at(state.cy), state.cx);
+  }
+
   if (state.cy < state.rowOffset) {
     state.rowOffset = state.cy;
   }
   if (state.cy >= state.rowOffset + state.screenRows) {
     state.rowOffset = state.cy - state.screenRows + 1;
   }
-  if (state.cx < state.colOffset) {
-    state.colOffset = state.cx;
+  if (state.rx < state.colOffset) {
+    state.colOffset = state.rx;
   }
-  if (state.cx >= state.colOffset + state.screenCols) {
-    state.colOffset = state.cx - state.screenCols + 1;
+  if (state.rx >= state.colOffset + state.screenCols) {
+    state.colOffset = state.rx - state.screenCols + 1;
   }
 }
 
@@ -97,12 +114,17 @@ bool Terminal::couldBeCommand(const std::string &buffer,
   return false;
 }
 
-void Terminal::goToTheEndOfLine() { state.cx = state.screenCols - 1; }
+void Terminal::goToTheEndOfLine() {
+  if (state.cy < state.numRow) {
+    state.cx = state.textRows[state.cy].textRow.size();
+  }
+}
 void Terminal::goToBeginningOfLine() { state.cx = 0; }
 
 Terminal::Terminal()
     : state({.cx = 0,
              .cy = 0,
+             .rx = 0,
              .screenRows = 0,
              .screenCols = 0,
              .terminalMode = NORMAL,
@@ -135,12 +157,18 @@ Terminal::Terminal()
   registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
 }
 void Terminal::scrollUp() {
+  state.cy = state.rowOffset;
   int times = state.screenRows;
   while (times--) {
     moveCursor('k');
   }
 }
 void Terminal::scrollDown() {
+
+  state.cy = state.rowOffset + state.screenRows + 1;
+  if (state.cy > state.numRow) {
+    state.cy = state.numRow;
+  }
   int times = state.screenRows;
   while (times--) {
     moveCursor('j');
@@ -234,7 +262,7 @@ void Terminal::editorRefreshScreen() {
   std::stringstream cursorStream{};
 
   cursorStream << "\x1b[" << (state.cy - state.rowOffset) + 1 << ";"
-               << (state.cx - state.colOffset) + 1 << "H";
+               << (state.rx - state.colOffset) + 1 << "H";
 
   buffer.append(std::move(cursorStream.str()));
   // h command and argument 25 used to show cursor
