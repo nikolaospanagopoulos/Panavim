@@ -157,6 +157,37 @@ Terminal::Terminal()
   registerCommand("_", [](Terminal &term) { term.goToBeginningOfLine(); });
   registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
   registerCommand("w", [](Terminal &term) { term.moveCursorAwordForward(); });
+  registerCommand("b", [](Terminal &term) { term.moveCursorAwordBackwards(); });
+}
+
+void Terminal::moveCursorAwordBackwards() {
+
+  if (state.cy > 0) {
+
+    if (state.cx == 0) {
+      state.cy--;
+      state.cx = state.textRows.at(state.cy).textRow.size();
+      return;
+    }
+  }
+  while (state.cx > 0 &&
+         state.cx <= state.textRows.at(state.cy).textRow.size()) {
+    char prev = state.textRows.at(state.cy).textRow[state.cx];
+    if (!std::isspace(state.textRows.at(state.cy).textRow[state.cx]) &&
+        !std::isupper(state.textRows.at(state.cy).textRow[state.cx])) {
+      state.cx--;
+    } else {
+      if (std::isspace(prev)) {
+        state.cx--;
+        if (!std::isspace(state.textRows.at(state.cy).textRow[state.cx])) {
+          break;
+        }
+        continue;
+      }
+      state.cx--;
+      break;
+    }
+  }
 }
 
 void Terminal::moveCursorAwordForward() {

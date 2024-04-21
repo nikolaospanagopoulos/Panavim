@@ -61,4 +61,5 @@ private:
   void appendRow(const std::string &line);
   int cxTorx(Row &row, int cx);
   void moveCursorAwordForward();
+  void moveCursorAwordBackwards();
 };
