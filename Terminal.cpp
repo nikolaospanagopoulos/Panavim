@@ -1,4 +1,5 @@
 #include "Terminal.hpp"
+#include <cctype>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -155,7 +156,22 @@ Terminal::Terminal()
   registerCommand("G", [](Terminal &term) { term.scrollDown(); });
   registerCommand("_", [](Terminal &term) { term.goToBeginningOfLine(); });
   registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
+  registerCommand("w", [](Terminal &term) { term.moveCursorAwordForward(); });
 }
+
+void Terminal::moveCursorAwordForward() {
+  if (state.cy < state.numRow) {
+    while (state.cx < state.textRows.at(state.cy).textRow.size()) {
+      if (!std::isspace(state.textRows.at(state.cy).textRow[state.cx]) &&
+          !std::isupper(state.textRows.at(state.cy).textRow[state.cx])) {
+        state.cx++;
+      } else {
+        break;
+      }
+    }
+  }
+}
+
 void Terminal::scrollUp() {
   state.cy = state.rowOffset;
   int times = state.screenRows;

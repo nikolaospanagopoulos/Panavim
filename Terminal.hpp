@@ -60,4 +60,5 @@ private:
   void adjustRowOffset();
   void appendRow(const std::string &line);
   int cxTorx(Row &row, int cx);
+  void moveCursorAwordForward();
 };
