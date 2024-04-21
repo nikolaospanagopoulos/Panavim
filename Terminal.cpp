@@ -161,6 +161,12 @@ Terminal::Terminal()
 
 void Terminal::moveCursorAwordForward() {
   if (state.cy < state.numRow) {
+
+    if (state.cx == state.textRows.at(state.cy).textRow.size()) {
+      state.cy++;
+      state.cx = 0;
+      return;
+    }
     while (state.cx < state.textRows.at(state.cy).textRow.size()) {
       char prev = state.textRows.at(state.cy).textRow[state.cx];
       if (!std::isspace(state.textRows.at(state.cy).textRow[state.cx]) &&
@@ -169,7 +175,7 @@ void Terminal::moveCursorAwordForward() {
       } else {
         if (std::isspace(prev)) {
           state.cx++;
-          if (std::isalnum(state.textRows.at(state.cy).textRow[state.cx])) {
+          if (!std::isspace(state.textRows.at(state.cy).textRow[state.cx])) {
             break;
           }
           continue;
