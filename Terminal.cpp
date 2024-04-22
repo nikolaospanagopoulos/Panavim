@@ -81,6 +81,7 @@ void Terminal::appendRow(const std::string &line) {
 
 void Terminal::editorOpen(const char *fileName) {
   inFile.open(fileName);
+  this->state.fileName = fileName;
   if (!inFile) {
     throw std::runtime_error("failed to get open file");
   }
@@ -120,6 +121,24 @@ void Terminal::goToTheEndOfLine() {
     state.cx = state.textRows[state.cy].textRow.size();
   }
 }
+void Terminal::drawStatusBar() {
+  buffer.append("\x1b[7m", 4);
+  std::stringstream statusStream{};
+  statusStream << state.fileName ? state.fileName : "[No Name]";
+  statusStream << " - lines " << state.numRow;
+  std::string status = statusStream.str();
+
+  int len = status.size();
+  if (len > state.screenCols) {
+    len = state.screenCols;
+  }
+  buffer.append(status.c_str(), len);
+  while (len < state.screenCols) {
+    buffer.append(" ");
+    len++;
+  }
+  buffer.append("\x1b[m");
+}
 void Terminal::goToBeginningOfLine() { state.cx = 0; }
 
 Terminal::Terminal()
@@ -133,12 +152,16 @@ Terminal::Terminal()
              .numRow = 0,
              .textRows = {},
              .rowOffset = 0,
-             .colOffset = 0}),
+             .colOffset = 0,
+             .fileName = {}}),
+
       buffer{""}, inFile{} {
   // get current terminal options
   if (tcgetattr(STDIN_FILENO, &state.originalTermios) == -1) {
     throw std::runtime_error("failed to get current terminal attributes");
   }
+  getWindowSize();
+  state.screenRows -= 1;
 
   struct termios raw = state.originalTermios;
   // disable CTRL-S CTRL-Q
@@ -313,13 +336,13 @@ void Terminal::editorRefreshScreen() {
 
   adjustRowOffset();
 
-  getWindowSize();
   // l command and argument 25 used to hide cursor
   buffer.append("\x1b[?25l");
   // K command -> erase each line
   // H command -> reposition cursor at top left. default argument 1
   buffer.append("\x1b[H");
   editorDrawRows();
+  drawStatusBar();
   // H command -> reposition cursor
   std::stringstream cursorStream{};
 
@@ -372,9 +395,7 @@ void Terminal::editorDrawRows() {
                     len);
     }
     buffer.append("\x1b[K");
-    if (y < state.screenRows - 1) {
-      buffer.append("\r\n");
-    }
+    buffer.append("\r\n");
   }
 }
 

@@ -31,6 +31,7 @@ public:
     std::vector<Row> textRows;
     int rowOffset;
     int colOffset;
+    std::string fileName;
   } state;
   Terminal();
   ~Terminal();
@@ -62,4 +63,5 @@ private:
   int cxTorx(Row &row, int cx);
   void moveCursorAwordForward();
   void moveCursorAwordBackwards();
+  void drawStatusBar();
 };
