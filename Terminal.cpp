@@ -181,6 +181,37 @@ Terminal::Terminal()
   registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
   registerCommand("w", [](Terminal &term) { term.moveCursorAwordForward(); });
   registerCommand("b", [](Terminal &term) { term.moveCursorAwordBackwards(); });
+  registerCommand("}",
+                  [](Terminal &term) { term.moveCursorToNextLineWithSpace(); });
+  registerCommand("{",
+                  [](Terminal &term) { term.moveCursorToPrevLineWithSpace(); });
+}
+void Terminal::moveCursorToPrevLineWithSpace() {
+  while (state.cy > 0) {
+    state.cy--;
+    if (state.cy <= 0) {
+      state.cy = 0;
+      break;
+    }
+    if (state.textRows.at(state.cy).textRow.empty()) {
+      state.cx = 0;
+      break;
+    }
+  }
+}
+
+void Terminal::moveCursorToNextLineWithSpace() {
+  while (state.cy < state.numRow) {
+    state.cy++;
+    if (state.cy >= state.numRow) {
+      state.cy = state.numRow - 1;
+      break;
+    }
+    if (state.textRows.at(state.cy).textRow.empty()) {
+      state.cx = 0;
+      break;
+    }
+  }
 }
 
 void Terminal::moveCursorAwordBackwards() {

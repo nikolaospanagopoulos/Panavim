@@ -64,4 +64,6 @@ private:
   void moveCursorAwordForward();
   void moveCursorAwordBackwards();
   void drawStatusBar();
+  void moveCursorToNextLineWithSpace();
+  void moveCursorToPrevLineWithSpace();
 };
