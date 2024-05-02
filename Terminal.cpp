@@ -138,8 +138,20 @@ void Terminal::drawStatusBar() {
     len++;
   }
   buffer.append("\x1b[m");
+  buffer.append("\r\n");
 }
 void Terminal::goToBeginningOfLine() { state.cx = 0; }
+
+void Terminal::setStatusMessage(std::string msg) { state.statusMsg = msg; }
+
+void Terminal::drawMessageCommandBar() {
+  buffer.append("\x1b[K");
+  int msgLen = state.statusMsg.size();
+  if (msgLen > state.screenCols) {
+    msgLen = state.screenCols;
+  }
+  buffer.append(state.statusMsg.c_str(), msgLen);
+}
 
 Terminal::Terminal()
     : state({.cx = 0,
@@ -153,7 +165,9 @@ Terminal::Terminal()
              .textRows = {},
              .rowOffset = 0,
              .colOffset = 0,
-             .fileName = {}}),
+             .fileName = {},
+             .statusMsg = {""},
+             .statusMsgTime = 0}),
 
       buffer{""}, inFile{} {
   // get current terminal options
@@ -161,7 +175,7 @@ Terminal::Terminal()
     throw std::runtime_error("failed to get current terminal attributes");
   }
   getWindowSize();
-  state.screenRows -= 1;
+  state.screenRows -= 2;
 
   struct termios raw = state.originalTermios;
   // disable CTRL-S CTRL-Q
@@ -367,13 +381,15 @@ void Terminal::editorRefreshScreen() {
 
   adjustRowOffset();
 
-  // l command and argument 25 used to hide cursor
+  // l comman and argument 25 used to hide cursor
   buffer.append("\x1b[?25l");
   // K command -> erase each line
   // H command -> reposition cursor at top left. default argument 1
   buffer.append("\x1b[H");
   editorDrawRows();
   drawStatusBar();
+
+  drawMessageCommandBar();
   // H command -> reposition cursor
   std::stringstream cursorStream{};
 

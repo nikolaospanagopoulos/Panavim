@@ -19,20 +19,26 @@ int main(int argc, char *argv[]) {
     char c = '\0';
     // Cursor to home position again
     // TODO: maybe needed to clear screen after each keypress
+    terminal.setStatusMessage("ddddd");
 
     while (true) {
       terminal.editorRefreshScreen();
+
       if (read(STDIN_FILENO, &c, 1) == 1) {
         c = terminal.editorCheckForKey(c);
         if (terminal.state.terminalMode == Terminal::NORMAL) {
+          terminal.setStatusMessage("");
           terminal.state.commandBuffer += c;
           if (c == 'i') { // 'i' to enter INPUT mode
+
+            terminal.setStatusMessage("--INPUT--");
             terminal.state.terminalMode = Terminal::INPUT;
             terminal.enterInputMode();
             inputBuffer.clear(); // Prepare for command input
 
           } else if (c == ':') { // ':' to enter COMMAND mode
             terminal.state.terminalMode = Terminal::COMMAND;
+            terminal.setStatusMessage(":");
             inputBuffer.clear(); // Prepare for command input
           }
           // Normal mode key handling (navigation, etc.) goes here
@@ -45,9 +51,9 @@ int main(int argc, char *argv[]) {
             break;
           }
           if (!terminal.couldBeCommand(terminal.state.commandBuffer,
-                                       std::vector<std::string>{"}","{", "gg", "G",
-                                                                "_", "$", "w",
-                                                                "b"})) {
+                                       std::vector<std::string>{"}", "{", "gg",
+                                                                "G", "_", "$",
+                                                                "w", "b"})) {
             terminal.state.commandBuffer.clear();
           }
           terminal.executeCommand(terminal.state.commandBuffer);
@@ -59,6 +65,7 @@ int main(int argc, char *argv[]) {
 
           if (c == 27) { // ESC returns to NORMAL mode
             terminal.state.terminalMode = Terminal::NORMAL;
+            terminal.setStatusMessage("");
             terminal.exitInputMode();
           } else {
             // Handle text input in INPUT mode
@@ -69,6 +76,7 @@ int main(int argc, char *argv[]) {
             terminal.state.terminalMode = Terminal::NORMAL;
           }
           if (c == '\r' || c == '\n') { // Enter processes the command
+            terminal.setStatusMessage("");
             if (inputBuffer == "q") {
               break; // Exit if 'q' is entered
             }
@@ -76,6 +84,7 @@ int main(int argc, char *argv[]) {
             inputBuffer.clear();
           } else {
             inputBuffer += c; // Accumulate command characters
+            terminal.setStatusMessage(":" + inputBuffer);
           }
         }
       }

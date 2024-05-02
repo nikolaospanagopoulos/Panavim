@@ -1,4 +1,5 @@
 #pragma once
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <string>
@@ -32,6 +33,8 @@ public:
     int rowOffset;
     int colOffset;
     std::string fileName;
+    std::string statusMsg;
+    time_t statusMsgTime;
   } state;
   Terminal();
   ~Terminal();
@@ -45,6 +48,7 @@ public:
   bool couldBeCommand(const std::string &buffer,
                       const std::vector<std::string> &commandList);
   void editorOpen(const char *fileName);
+  void setStatusMessage(std::string msg);
 
 private:
   void editorUpdateRow(Row &row);
@@ -66,4 +70,5 @@ private:
   void drawStatusBar();
   void moveCursorToNextLineWithSpace();
   void moveCursorToPrevLineWithSpace();
+  void drawMessageCommandBar();
 };
