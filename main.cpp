@@ -38,8 +38,9 @@ int main(int argc, char *argv[]) {
 
           } else if (c == ':') { // ':' to enter COMMAND mode
             terminal.state.terminalMode = Terminal::COMMAND;
-            terminal.setStatusMessage(":");
             inputBuffer.clear(); // Prepare for command input
+            inputBuffer = ":";
+            terminal.setStatusMessage(inputBuffer);
           }
           // Normal mode key handling (navigation, etc.) goes here
           switch (c) {
@@ -65,7 +66,6 @@ int main(int argc, char *argv[]) {
 
           if (c == 27) { // ESC returns to NORMAL mode
             terminal.state.terminalMode = Terminal::NORMAL;
-            terminal.setStatusMessage("");
             terminal.exitInputMode();
           } else {
             // Handle text input in INPUT mode
@@ -73,18 +73,20 @@ int main(int argc, char *argv[]) {
         } else if (terminal.state.terminalMode == Terminal::COMMAND) {
 
           if (c == 27) { // ESC returns to NORMAL mode
+            inputBuffer.clear();
             terminal.state.terminalMode = Terminal::NORMAL;
           }
           if (c == '\r' || c == '\n') { // Enter processes the command
-            terminal.setStatusMessage("");
-            if (inputBuffer == "q") {
+            if (inputBuffer.substr(1) == "q") {
               break; // Exit if 'q' is entered
             }
             terminal.state.terminalMode = Terminal::NORMAL;
+            terminal.setStatusMessage("");
             inputBuffer.clear();
           } else {
             inputBuffer += c; // Accumulate command characters
-            terminal.setStatusMessage(":" + inputBuffer);
+
+            terminal.setStatusMessage(inputBuffer);
           }
         }
       }

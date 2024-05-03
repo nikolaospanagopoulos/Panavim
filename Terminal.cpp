@@ -142,7 +142,10 @@ void Terminal::drawStatusBar() {
 }
 void Terminal::goToBeginningOfLine() { state.cx = 0; }
 
-void Terminal::setStatusMessage(std::string msg) { state.statusMsg = msg; }
+void Terminal::setStatusMessage(std::string msg) {
+  state.statusMsg.clear();
+  state.statusMsg = msg;
+}
 
 void Terminal::drawMessageCommandBar() {
   buffer.append("\x1b[K");
