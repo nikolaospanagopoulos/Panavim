@@ -26,6 +26,21 @@ int Terminal::cxTorx(Row &row, int cx) {
   return rx;
 }
 
+void Terminal::insertChar(int c) {
+  if (state.cy == state.numRow) {
+    std::string newRow = "";
+    appendRow(newRow);
+  }
+  editorRowInsertChar(state.textRows[state.cy], state.cx, c);
+  state.cx++;
+}
+void Terminal::editorRowInsertChar(Row &row, int at, int c) {
+  if (at < 0 || at > row.textRow.size()) {
+    at = row.textRow.size();
+  }
+  row.textRow.insert(at, 1, c);
+  editorUpdateRow(row);
+}
 void Terminal::adjustRowOffset() {
   state.rx = 0;
 

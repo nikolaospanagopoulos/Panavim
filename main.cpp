@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
             terminal.state.terminalMode = Terminal::NORMAL;
             terminal.exitInputMode();
           } else {
-            // Handle text input in INPUT mode
+            terminal.insertChar(c);
           }
         } else if (terminal.state.terminalMode == Terminal::COMMAND) {
 
