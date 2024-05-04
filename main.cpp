@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
         } else if (terminal.state.terminalMode == Terminal::INPUT) {
 
           if (c == 27) { // ESC returns to NORMAL mode
+            terminal.setStatusMessage("");
             terminal.state.terminalMode = Terminal::NORMAL;
             terminal.exitInputMode();
           } else {
