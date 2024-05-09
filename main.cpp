@@ -4,7 +4,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
-
 int main(int argc, char *argv[]) {
 
   try {
@@ -69,7 +68,7 @@ int main(int argc, char *argv[]) {
             terminal.state.terminalMode = Terminal::NORMAL;
             terminal.exitInputMode();
           } else {
-            terminal.insertChar(c);
+            terminal.handleCharForInputMode(c);
           }
         } else if (terminal.state.terminalMode == Terminal::COMMAND) {
 
@@ -80,6 +79,13 @@ int main(int argc, char *argv[]) {
           if (c == '\r' || c == '\n') { // Enter processes the command
             if (inputBuffer.substr(1) == "q") {
               break; // Exit if 'q' is entered
+            }
+            if (inputBuffer.substr(1) == "w") {
+              terminal.editorSave();
+            }
+            if (inputBuffer.substr(1) == "wq") {
+              terminal.editorSave();
+              break;
             }
             terminal.state.terminalMode = Terminal::NORMAL;
             terminal.setStatusMessage("");

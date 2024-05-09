@@ -49,12 +49,14 @@ public:
                       const std::vector<std::string> &commandList);
   void editorOpen(const char *fileName);
   void setStatusMessage(std::string msg);
-  void insertChar(int c);
+  void handleCharForInputMode(int c);
+  void editorSave();
 
 private:
   void editorRowInsertChar(Row &row, int at, int c);
   void editorUpdateRow(Row &row);
   std::ifstream inFile;
+  std::ofstream outFile;
   void goToBeginningOfLine();
   void goToTheEndOfLine();
   std::unordered_map<std::string, CommandHandler> commandHandlers;
@@ -73,4 +75,6 @@ private:
   void moveCursorToNextLineWithSpace();
   void moveCursorToPrevLineWithSpace();
   void drawMessageCommandBar();
+  void insertChar(int c);
+  std::string rowsToFinalStr();
 };

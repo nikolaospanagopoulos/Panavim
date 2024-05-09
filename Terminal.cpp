@@ -25,6 +25,33 @@ int Terminal::cxTorx(Row &row, int cx) {
   }
   return rx;
 }
+void Terminal::handleCharForInputMode(int c) {
+  switch (c) {
+  case '\r':
+    break;
+  case 127:
+    break;
+  default:
+    insertChar(c);
+  }
+}
+
+std::string Terminal::rowsToFinalStr() {
+  std::string buf;
+  for (const Row &row : state.textRows) {
+    buf.append(row.textRow + '\n');
+  }
+  return buf;
+}
+
+void Terminal::editorSave() {
+  if (state.fileName.empty()) {
+    return;
+  }
+  outFile.open(state.fileName);
+  std::string toSaveLines = rowsToFinalStr();
+  outFile << toSaveLines;
+}
 
 void Terminal::insertChar(int c) {
   if (state.cy == state.numRow) {
@@ -187,7 +214,7 @@ Terminal::Terminal()
              .statusMsg = {""},
              .statusMsgTime = 0}),
 
-      buffer{""}, inFile{} {
+      buffer{""}, inFile{}, outFile{} {
   // get current terminal options
   if (tcgetattr(STDIN_FILENO, &state.originalTermios) == -1) {
     throw std::runtime_error("failed to get current terminal attributes");
@@ -471,6 +498,9 @@ Terminal::~Terminal() {
   // close file
   if (inFile) {
     inFile.close();
+  }
+  if (outFile) {
+    outFile.close();
   }
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &state.originalTermios);
   // clear screen
