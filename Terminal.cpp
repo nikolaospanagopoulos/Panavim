@@ -1,7 +1,5 @@
 #include "Terminal.hpp"
 #include <cctype>
-#include <cstddef>
-#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -340,7 +338,7 @@ void Terminal::scrollUp() {
 }
 void Terminal::scrollDown() {
 
-  state.cy = state.rowOffset + state.screenRows + 1;
+  state.cy = state.rowOffset + state.screenRows - 1;
   if (state.cy > state.numRow) {
     state.cy = state.numRow;
   }

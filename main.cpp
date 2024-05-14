@@ -1,11 +1,9 @@
 #include "Terminal.hpp"
-#include <cctype>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
 int main(int argc, char *argv[]) {
-
   try {
     Terminal terminal;
     if (argc >= 2) {
@@ -18,7 +16,7 @@ int main(int argc, char *argv[]) {
     char c = '\0';
     // Cursor to home position again
     // TODO: maybe needed to clear screen after each keypress
-    terminal.setStatusMessage("ddddd");
+    terminal.setStatusMessage("");
 
     while (true) {
       terminal.editorRefreshScreen();
