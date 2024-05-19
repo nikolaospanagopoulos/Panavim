@@ -23,32 +23,43 @@ int Terminal::cxTorx(Row &row, int cx) {
   }
   return rx;
 }
+
 void Terminal::handleCharForInputMode(int c) {
   switch (c) {
   case '\r':
     break;
   case 127:
+  case 8:
+    editorDeleteChar();
     break;
   default:
     insertChar(c);
   }
 }
 
-std::string Terminal::rowsToFinalStr() {
+std::string Terminal::rowsToFinalStr(long *const sizePtr) {
   std::string buf;
+  long count = 0;
   for (const Row &row : state.textRows) {
     buf.append(row.textRow + '\n');
+    count += row.textRow.size() + 1;
   }
+  *sizePtr = count;
   return buf;
 }
 
 void Terminal::editorSave() {
+
+  long bufferSize = 0;
   if (state.fileName.empty()) {
     return;
   }
   outFile.open(state.fileName);
-  std::string toSaveLines = rowsToFinalStr();
+  std::string toSaveLines = rowsToFinalStr(&bufferSize);
   outFile << toSaveLines;
+  std::string message = std::to_string(bufferSize) + " bytes written to disk";
+  setStatusMessage(message);
+  state.file_status = NOT_MODIFIED;
 }
 
 void Terminal::insertChar(int c) {
@@ -58,6 +69,7 @@ void Terminal::insertChar(int c) {
   }
   editorRowInsertChar(state.textRows[state.cy], state.cx, c);
   state.cx++;
+  state.file_status = MODIFIED;
 }
 void Terminal::editorRowInsertChar(Row &row, int at, int c) {
   if (at < 0 || at > row.textRow.size()) {
@@ -117,6 +129,7 @@ void Terminal::appendRow(const std::string &line) {
   editorUpdateRow(row);
   state.textRows.emplace_back(std::move(row));
   state.numRow++;
+  state.file_status = MODIFIED;
 }
 
 void Terminal::editorOpen(const char *fileName) {
@@ -131,6 +144,7 @@ void Terminal::editorOpen(const char *fileName) {
     // state.textRows.emplace_back(std::move(line));
     appendRow(line);
   }
+  state.file_status = NOT_MODIFIED;
 }
 
 void Terminal::registerCommand(const std::string &command,
@@ -144,6 +158,26 @@ void Terminal::executeCommand(const std::string &command) {
     it->second(*this);
     state.commandBuffer.clear();
   }
+}
+
+void Terminal::editorDeleteChar() {
+  if (state.cy == state.numRow) {
+    return;
+  }
+  Row &row = state.textRows.at(state.cy);
+  if (state.cx > 0) {
+    editorDeleteCharAt(row, state.cx - 1);
+    state.cx--;
+  }
+}
+
+void Terminal::editorDeleteCharAt(Row &row, int at) {
+  if (at < 0 || at >= row.textRow.size()) {
+    return;
+  }
+  row.textRow.erase(row.textRow.begin() + at);
+  editorUpdateRow(row);
+  state.file_status = MODIFIED;
 }
 
 bool Terminal::couldBeCommand(const std::string &buffer,
@@ -166,6 +200,7 @@ void Terminal::drawStatusBar() {
   std::stringstream statusStream{};
   statusStream << state.fileName ? state.fileName : "[No Name]";
   statusStream << " - lines " << state.numRow;
+  statusStream << ((state.file_status == MODIFIED) ? " (modified)" : "");
   std::string status = statusStream.str();
 
   int len = status.size();
@@ -185,6 +220,7 @@ void Terminal::goToBeginningOfLine() { state.cx = 0; }
 void Terminal::setStatusMessage(std::string msg) {
   state.statusMsg.clear();
   state.statusMsg = msg;
+  state.statusMsgTime = time(NULL);
 }
 
 void Terminal::drawMessageCommandBar() {
@@ -193,7 +229,10 @@ void Terminal::drawMessageCommandBar() {
   if (msgLen > state.screenCols) {
     msgLen = state.screenCols;
   }
-  buffer.append(state.statusMsg.c_str(), msgLen);
+  if (msgLen && time(NULL) - state.statusMsgTime < 5) {
+
+    buffer.append(state.statusMsg.c_str(), msgLen);
+  }
 }
 
 Terminal::Terminal()
@@ -210,7 +249,8 @@ Terminal::Terminal()
              .colOffset = 0,
              .fileName = {},
              .statusMsg = {""},
-             .statusMsgTime = 0}),
+             .statusMsgTime = 0,
+             .file_status = NOT_MODIFIED}),
 
       buffer{""}, inFile{}, outFile{} {
   // get current terminal options

@@ -18,10 +18,13 @@ class Terminal {
 public:
   enum editorKey { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
   enum MODE { NORMAL, INPUT, COMMAND }; // Added NORMAL mode for clarity
+  enum FILE_STATUS { MODIFIED, NOT_MODIFIED };
+  enum SPECIAL_KEYS { ESCAPE_KEY = 127, CTRL_H = 8 };
   using CommandHandler = std::function<void(Terminal &)>;
   struct editorState {
     int cx;
     int cy;
+
     int rx;
     int screenRows;
     int screenCols;
@@ -35,6 +38,7 @@ public:
     std::string fileName;
     std::string statusMsg;
     time_t statusMsgTime;
+    FILE_STATUS file_status;
   } state;
   Terminal();
   ~Terminal();
@@ -51,6 +55,7 @@ public:
   void setStatusMessage(std::string msg);
   void handleCharForInputMode(int c);
   void editorSave();
+  void editorDeleteChar();
 
 private:
   void editorRowInsertChar(Row &row, int at, int c);
@@ -76,5 +81,6 @@ private:
   void moveCursorToPrevLineWithSpace();
   void drawMessageCommandBar();
   void insertChar(int c);
-  std::string rowsToFinalStr();
+  std::string rowsToFinalStr(long *const sizePtr);
+  void editorDeleteCharAt(Row &row, int at);
 };

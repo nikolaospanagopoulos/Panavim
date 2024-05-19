@@ -76,17 +76,23 @@ int main(int argc, char *argv[]) {
           }
           if (c == '\r' || c == '\n') { // Enter processes the command
             if (inputBuffer.substr(1) == "q") {
-              break; // Exit if 'q' is entered
-            }
-            if (inputBuffer.substr(1) == "w") {
+              if (terminal.state.file_status != Terminal::MODIFIED) {
+                break; // Exit if 'q' is entered
+              } else {
+                terminal.setStatusMessage(
+                    "File has unsaved changes. To quit press :q");
+              }
+            } else if (inputBuffer.substr(1) == "w") {
               terminal.editorSave();
-            }
-            if (inputBuffer.substr(1) == "wq") {
+            } else if (inputBuffer.substr(1) == "wq") {
               terminal.editorSave();
               break;
+            } else if (inputBuffer.substr(1) == "q!") {
+              break;
+            } else {
+              terminal.setStatusMessage("");
             }
             terminal.state.terminalMode = Terminal::NORMAL;
-            terminal.setStatusMessage("");
             inputBuffer.clear();
           } else {
             inputBuffer += c; // Accumulate command characters
