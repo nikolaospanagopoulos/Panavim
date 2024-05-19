@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     std::string normalModeBuffer{};
     std::string inputBuffer;
 
-    char c = '\0';
+    int c = '\0';
     // Cursor to home position again
     // TODO: maybe needed to clear screen after each keypress
     terminal.setStatusMessage("");

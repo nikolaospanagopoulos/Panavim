@@ -25,11 +25,16 @@ int Terminal::cxTorx(Row &row, int cx) {
 }
 
 void Terminal::handleCharForInputMode(int c) {
+
   switch (c) {
   case '\r':
     break;
-  case 127:
-  case 8:
+  case DEL:
+    moveCursor('l');
+    editorDeleteChar();
+    break;
+  case ESCAPE_KEY:
+  case CTRL_H:
     editorDeleteChar();
     break;
   default:
@@ -387,7 +392,7 @@ void Terminal::scrollDown() {
     moveCursor('j');
   }
 }
-char Terminal::editorCheckForKey(const char &key) const {
+int Terminal::editorCheckForKey(const char &key) const {
   if (key == '\x1b') {
     char seq[3]{};
     if (read(STDIN_FILENO, &seq[0], 1) != 1) {
@@ -406,6 +411,14 @@ char Terminal::editorCheckForKey(const char &key) const {
         return 'l';
       case 'D':
         return 'h';
+      case '3':
+        if (read(STDIN_FILENO, &seq[2], 1) != 1) {
+          return '\x1b';
+        }
+        if (seq[2] == '~') {
+          return 1000;
+        }
+        break;
       }
     }
     return '\x1b';

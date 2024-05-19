@@ -19,7 +19,7 @@ public:
   enum editorKey { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
   enum MODE { NORMAL, INPUT, COMMAND }; // Added NORMAL mode for clarity
   enum FILE_STATUS { MODIFIED, NOT_MODIFIED };
-  enum SPECIAL_KEYS { ESCAPE_KEY = 127, CTRL_H = 8 };
+  enum SPECIAL_KEYS { ESCAPE_KEY = 127, CTRL_H = 8, DEL = 1000 };
   using CommandHandler = std::function<void(Terminal &)>;
   struct editorState {
     int cx;
@@ -45,7 +45,7 @@ public:
   void editorRefreshScreen();
   int getWindowSize();
   void moveCursor(const int key);
-  char editorCheckForKey(const char &key) const;
+  int editorCheckForKey(const char &key) const;
   void enterInputMode() const;
   void exitInputMode() const;
   void executeCommand(const std::string &command);
