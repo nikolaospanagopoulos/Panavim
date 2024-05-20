@@ -28,6 +28,7 @@ void Terminal::handleCharForInputMode(int c) {
 
   switch (c) {
   case '\r':
+    editorInsertNewLine();
     break;
   case DEL:
     moveCursor('l');
@@ -70,7 +71,7 @@ void Terminal::editorSave() {
 void Terminal::insertChar(int c) {
   if (state.cy == state.numRow) {
     std::string newRow = "";
-    appendRow(newRow);
+    insertRow(0, newRow);
   }
   editorRowInsertChar(state.textRows[state.cy], state.cx, c);
   state.cx++;
@@ -128,11 +129,16 @@ void Terminal::editorUpdateRow(Row &row) {
   }
 }
 
-void Terminal::appendRow(const std::string &line) {
+void Terminal::insertRow(int at, const std::string &line) {
+
+  if (at < 0 || at > state.numRow) {
+    return;
+  }
 
   Row row = Row{line, ""};
+
   editorUpdateRow(row);
-  state.textRows.emplace_back(std::move(row));
+  state.textRows.insert(state.textRows.begin() + at, std::move(row));
   state.numRow++;
   state.file_status = MODIFIED;
 }
@@ -147,7 +153,7 @@ void Terminal::editorOpen(const char *fileName) {
   while (std::getline(inFile, line)) {
     // put the string in the vector. don't copy it
     // state.textRows.emplace_back(std::move(line));
-    appendRow(line);
+    insertRow(state.numRow, line);
   }
   state.file_status = NOT_MODIFIED;
 }
@@ -619,4 +625,22 @@ void Terminal::editorRowAppendString(Row &row, std::string &toAppend) {
   row.textRow += std::move(toAppend);
   editorUpdateRow(row);
   state.file_status = MODIFIED;
+}
+void Terminal::editorInsertNewLineAt(unsigned long at) { insertRow(at, ""); }
+
+void Terminal::editorInsertNewLine() {
+  if (state.cx == 0) {
+    editorInsertNewLineAt(0);
+  } else {
+    Row &row = state.textRows.at(state.cy);
+
+    std::string seperated =
+        row.textRow.substr(state.cx, row.textRow.size() - state.cx);
+    row.textRow.erase(state.cx, state.textRows.size() - state.cx);
+    insertRow(state.cy + 1, seperated);
+    row = state.textRows.at(state.cy);
+    editorUpdateRow(row);
+  }
+  state.cy++;
+  state.cx = 0;
 }

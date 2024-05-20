@@ -56,6 +56,7 @@ public:
   void handleCharForInputMode(int c);
   void editorSave();
   void editorDeleteChar();
+  void editorInsertNewLineAt(unsigned long at);
 
 private:
   void editorRowInsertChar(Row &row, int at, int c);
@@ -72,7 +73,7 @@ private:
   void scrollUp();
   void scrollDown();
   void adjustRowOffset();
-  void appendRow(const std::string &line);
+  void insertRow(int at, const std::string &line);
   int cxTorx(Row &row, int cx);
   void moveCursorAwordForward();
   void moveCursorAwordBackwards();
@@ -85,4 +86,5 @@ private:
   void editorDeleteCharAt(Row &row, int at);
   void editorDeleteRow(int at);
   void editorRowAppendString(Row &row, std::string &toAppend);
+  void editorInsertNewLine();
 };
