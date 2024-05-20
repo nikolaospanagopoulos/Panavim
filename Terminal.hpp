@@ -83,4 +83,6 @@ private:
   void insertChar(int c);
   std::string rowsToFinalStr(long *const sizePtr);
   void editorDeleteCharAt(Row &row, int at);
+  void editorDeleteRow(int at);
+  void editorRowAppendString(Row &row, std::string &toAppend);
 };

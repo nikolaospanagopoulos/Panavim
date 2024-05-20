@@ -169,10 +169,18 @@ void Terminal::editorDeleteChar() {
   if (state.cy == state.numRow) {
     return;
   }
+  if (state.cx == 0 && state.cy == 0) {
+    return;
+  }
   Row &row = state.textRows.at(state.cy);
   if (state.cx > 0) {
     editorDeleteCharAt(row, state.cx - 1);
     state.cx--;
+  } else {
+    state.cx = state.textRows.at(state.cy - 1).textRow.size();
+    editorRowAppendString(state.textRows.at(state.cy - 1), row.textRow);
+    editorDeleteRow(state.cy);
+    state.cy--;
   }
 }
 
@@ -599,4 +607,16 @@ int Terminal::getCursorPosition() {
   }
 
   return 0;
+}
+void Terminal::editorDeleteRow(int at) {
+  if (at < 0 || at >= state.numRow)
+    return;
+  state.textRows.erase(state.textRows.begin() + at);
+  state.numRow--;
+  state.file_status = MODIFIED;
+}
+void Terminal::editorRowAppendString(Row &row, std::string &toAppend) {
+  row.textRow += std::move(toAppend);
+  editorUpdateRow(row);
+  state.file_status = MODIFIED;
 }
