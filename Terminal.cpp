@@ -27,6 +27,18 @@ int Terminal::cxTorx(Row &row, int cx) {
 void Terminal::handleCharForInputMode(int c) {
 
   switch (c) {
+  case ARROW_UP:
+    moveCursor('k');
+    break;
+  case ARROW_DOWN:
+    moveCursor('j');
+    break;
+  case ARROW_LEFT:
+    moveCursor('h');
+    break;
+  case ARROW_RIGHT:
+    moveCursor('l');
+    break;
   case '\r':
     editorInsertNewLine();
     break;
@@ -172,7 +184,7 @@ void Terminal::executeCommand(const std::string &command) {
 }
 
 void Terminal::editorDeleteChar() {
-  if (state.cy == state.numRow) {
+  if (state.cy == state.numRow && state.terminalMode != COMMAND) {
     return;
   }
   if (state.cx == 0 && state.cy == 0) {
@@ -406,7 +418,7 @@ void Terminal::scrollDown() {
     moveCursor('j');
   }
 }
-int Terminal::editorCheckForKey(const char &key) const {
+int Terminal::editorCheckForKey(const char &key) {
   if (key == '\x1b') {
     char seq[3]{};
     if (read(STDIN_FILENO, &seq[0], 1) != 1) {
@@ -418,19 +430,19 @@ int Terminal::editorCheckForKey(const char &key) const {
     if (seq[0] == '[') {
       switch (seq[1]) {
       case 'A':
-        return 'k';
+        return ARROW_UP;
       case 'B':
-        return 'j';
+        return ARROW_DOWN;
       case 'C':
-        return 'l';
+        return ARROW_RIGHT;
       case 'D':
-        return 'h';
+        return ARROW_LEFT;
       case '3':
         if (read(STDIN_FILENO, &seq[2], 1) != 1) {
           return '\x1b';
         }
         if (seq[2] == '~') {
-          return 1000;
+          return 1500;
         }
         break;
       }

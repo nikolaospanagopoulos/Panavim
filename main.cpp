@@ -40,7 +40,20 @@ int main(int argc, char *argv[]) {
             terminal.setStatusMessage(inputBuffer);
           }
           // Normal mode key handling (navigation, etc.) goes here
+
           switch (c) {
+          case Terminal::ARROW_DOWN:
+            terminal.moveCursor('j');
+            break;
+          case Terminal::ARROW_LEFT:
+            terminal.moveCursor('h');
+            break;
+          case Terminal::ARROW_RIGHT:
+            terminal.moveCursor('l');
+            break;
+          case Terminal::ARROW_UP:
+            terminal.moveCursor('k');
+            break;
           case 'k':
           case 'j':
           case 'l':
@@ -95,8 +108,15 @@ int main(int argc, char *argv[]) {
             terminal.state.terminalMode = Terminal::NORMAL;
             inputBuffer.clear();
           } else {
-            inputBuffer += c; // Accumulate command characters
 
+            switch (c) {
+            case Terminal::SPECIAL_KEYS::CTRL_H:
+            case Terminal::SPECIAL_KEYS::ESCAPE_KEY:
+              inputBuffer.erase(inputBuffer.begin() + 2);
+              break;
+            default:
+              inputBuffer += c; // Accumulate command characters
+            }
             terminal.setStatusMessage(inputBuffer);
           }
         }
