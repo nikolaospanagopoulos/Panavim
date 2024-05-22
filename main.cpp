@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
+
 int main(int argc, char *argv[]) {
   try {
     Terminal terminal;
@@ -14,8 +15,6 @@ int main(int argc, char *argv[]) {
     std::string inputBuffer;
 
     int c = '\0';
-    // Cursor to home position again
-    // TODO: maybe needed to clear screen after each keypress
     terminal.setStatusMessage("");
 
     while (true) {
@@ -26,20 +25,17 @@ int main(int argc, char *argv[]) {
         if (terminal.state.terminalMode == Terminal::NORMAL) {
           terminal.setStatusMessage("");
           terminal.state.commandBuffer += c;
-          if (c == 'i') { // 'i' to enter INPUT mode
-
+          if (c == 'i') {
             terminal.setStatusMessage("--INPUT--");
             terminal.state.terminalMode = Terminal::INPUT;
             terminal.enterInputMode();
-            inputBuffer.clear(); // Prepare for command input
-
-          } else if (c == ':') { // ':' to enter COMMAND mode
+            inputBuffer.clear();
+          } else if (c == ':') {
             terminal.state.terminalMode = Terminal::COMMAND;
-            inputBuffer.clear(); // Prepare for command input
+            inputBuffer.clear();
             inputBuffer = ":";
             terminal.setStatusMessage(inputBuffer);
           }
-          // Normal mode key handling (navigation, etc.) goes here
 
           switch (c) {
           case Terminal::ARROW_DOWN:
@@ -61,6 +57,7 @@ int main(int argc, char *argv[]) {
             terminal.moveCursor(c);
             break;
           }
+
           if (!terminal.couldBeCommand(terminal.state.commandBuffer,
                                        std::vector<std::string>{"}", "{", "gg",
                                                                 "G", "_", "$",
@@ -73,8 +70,7 @@ int main(int argc, char *argv[]) {
             terminal.state.commandBuffer.clear();
           }
         } else if (terminal.state.terminalMode == Terminal::INPUT) {
-
-          if (c == 27) { // ESC returns to NORMAL mode
+          if (c == 27) {
             terminal.setStatusMessage("");
             terminal.state.terminalMode = Terminal::NORMAL;
             terminal.exitInputMode();
@@ -82,23 +78,38 @@ int main(int argc, char *argv[]) {
             terminal.handleCharForInputMode(c);
           }
         } else if (terminal.state.terminalMode == Terminal::COMMAND) {
-
-          if (c == 27) { // ESC returns to NORMAL mode
+          if (c == 27) {
             inputBuffer.clear();
             terminal.state.terminalMode = Terminal::NORMAL;
           }
-          if (c == '\r' || c == '\n') { // Enter processes the command
+          if (c == '\r' || c == '\n') {
             if (inputBuffer.substr(1) == "q") {
               if (terminal.state.file_status != Terminal::MODIFIED) {
-                break; // Exit if 'q' is entered
+                break;
               } else {
                 terminal.setStatusMessage(
-                    "File has unsaved changes. To quit press :q");
+                    "File has unsaved changes. To quit press :q!");
               }
             } else if (inputBuffer.substr(1) == "w") {
-              terminal.editorSave();
+              if (terminal.state.fileName.empty()) {
+                std::string fileName = terminal.prompt("Save as: ");
+                if (!fileName.empty()) {
+                  terminal.state.fileName = fileName;
+                  terminal.editorSave();
+                }
+              } else {
+                terminal.editorSave();
+              }
             } else if (inputBuffer.substr(1) == "wq") {
-              terminal.editorSave();
+              if (terminal.state.fileName.empty()) {
+                std::string fileName = terminal.prompt("Save as: ");
+                if (!fileName.empty()) {
+                  terminal.state.fileName = fileName;
+                  terminal.editorSave();
+                }
+              } else {
+                terminal.editorSave();
+              }
               break;
             } else if (inputBuffer.substr(1) == "q!") {
               break;
@@ -108,14 +119,13 @@ int main(int argc, char *argv[]) {
             terminal.state.terminalMode = Terminal::NORMAL;
             inputBuffer.clear();
           } else {
-
             switch (c) {
             case Terminal::SPECIAL_KEYS::CTRL_H:
             case Terminal::SPECIAL_KEYS::ESCAPE_KEY:
               inputBuffer.erase(inputBuffer.begin() + 2);
               break;
             default:
-              inputBuffer += c; // Accumulate command characters
+              inputBuffer += c;
             }
             terminal.setStatusMessage(inputBuffer);
           }

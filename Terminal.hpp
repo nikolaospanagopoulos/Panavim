@@ -58,6 +58,9 @@ public:
   void editorDeleteChar();
   void editorInsertNewLineAt(unsigned long at);
 
+  std::string prompt(const std::string &message);
+  void handlePromptInput(char c, std::string &inputBuffer, bool &promptActive);
+
 private:
   void editorRowInsertChar(Row &row, int at, int c);
   void editorUpdateRow(Row &row);

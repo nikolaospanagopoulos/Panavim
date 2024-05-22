@@ -67,10 +67,13 @@ std::string Terminal::rowsToFinalStr(long *const sizePtr) {
 }
 
 void Terminal::editorSave() {
-
   long bufferSize = 0;
   if (state.fileName.empty()) {
-    return;
+    state.fileName = prompt("Save as: ");
+    if (state.fileName.empty()) {
+      setStatusMessage("Save aborted.");
+      return;
+    }
   }
   outFile.open(state.fileName);
   std::string toSaveLines = rowsToFinalStr(&bufferSize);
@@ -655,4 +658,44 @@ void Terminal::editorInsertNewLine() {
   }
   state.cy++;
   state.cx = 0;
+}
+std::string Terminal::prompt(const std::string &message) {
+  setStatusMessage(message);
+  std::string inputBuffer;
+  char c = '\0';
+  bool promptActive = true;
+
+  while (promptActive) {
+    editorRefreshScreen();
+
+    if (read(STDIN_FILENO, &c, 1) == 1) {
+      handlePromptInput(c, inputBuffer, promptActive);
+    }
+  }
+
+  return inputBuffer;
+}
+
+void Terminal::handlePromptInput(char c, std::string &inputBuffer,
+                                 bool &promptActive) {
+  switch (c) {
+  case '\r':
+    promptActive = false;
+    break;
+  case '\x1b':
+    inputBuffer.clear();
+    promptActive = false;
+    break;
+  case CTRL_H:
+  case DEL:
+    if (!inputBuffer.empty()) {
+      inputBuffer.pop_back();
+    }
+    break;
+  default:
+    if (!iscntrl(c)) {
+      inputBuffer += c;
+    }
+  }
+  setStatusMessage("Prompt: " + inputBuffer);
 }
