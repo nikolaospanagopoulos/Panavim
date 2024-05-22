@@ -91,25 +91,9 @@ int main(int argc, char *argv[]) {
                     "File has unsaved changes. To quit press :q!");
               }
             } else if (inputBuffer.substr(1) == "w") {
-              if (terminal.state.fileName.empty()) {
-                std::string fileName = terminal.prompt("Save as: ");
-                if (!fileName.empty()) {
-                  terminal.state.fileName = fileName;
-                  terminal.editorSave();
-                }
-              } else {
-                terminal.editorSave();
-              }
+              terminal.editorSave();
             } else if (inputBuffer.substr(1) == "wq") {
-              if (terminal.state.fileName.empty()) {
-                std::string fileName = terminal.prompt("Save as: ");
-                if (!fileName.empty()) {
-                  terminal.state.fileName = fileName;
-                  terminal.editorSave();
-                }
-              } else {
-                terminal.editorSave();
-              }
+              terminal.editorSave();
               break;
             } else if (inputBuffer.substr(1) == "q!") {
               break;
@@ -120,9 +104,11 @@ int main(int argc, char *argv[]) {
             inputBuffer.clear();
           } else {
             switch (c) {
+            case 127: // Backspace
             case Terminal::SPECIAL_KEYS::CTRL_H:
-            case Terminal::SPECIAL_KEYS::ESCAPE_KEY:
-              inputBuffer.erase(inputBuffer.begin() + 2);
+              if (!inputBuffer.empty()) {
+                inputBuffer.pop_back();
+              }
               break;
             default:
               inputBuffer += c;
