@@ -1,5 +1,6 @@
 #include "Terminal.hpp"
 #include <cctype>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -67,10 +68,13 @@ std::string Terminal::rowsToFinalStr(long *const sizePtr) {
 }
 
 void Terminal::editorSave() {
-
   long bufferSize = 0;
   if (state.fileName.empty()) {
-    return;
+    state.fileName = prompt("Save as: ", PROMPT_TYPE::SAVE_FILE);
+    if (state.fileName.empty()) {
+      setStatusMessage("Save aborted.");
+      return;
+    }
   }
   outFile.open(state.fileName);
   std::string toSaveLines = rowsToFinalStr(&bufferSize);
@@ -402,7 +406,7 @@ void Terminal::moveCursorAwordForward() {
 
 void Terminal::scrollUp() {
   state.cy = state.rowOffset;
-  int times = state.screenRows;
+  int times = state.numRow;
   while (times--) {
     moveCursor('k');
   }
@@ -413,7 +417,7 @@ void Terminal::scrollDown() {
   if (state.cy > state.numRow) {
     state.cy = state.numRow;
   }
-  int times = state.screenRows;
+  int times = state.numRow;
   while (times--) {
     moveCursor('j');
   }
@@ -655,4 +659,75 @@ void Terminal::editorInsertNewLine() {
   }
   state.cy++;
   state.cx = 0;
+}
+std::string Terminal::prompt(const std::string &message,
+                             PROMPT_TYPE promptType) {
+  setStatusMessage(message);
+  std::string inputBuffer;
+  int c = '\0';
+  bool promptActive = true;
+  int cursorPosition = 0;
+
+  while (promptActive) {
+    editorRefreshScreen();
+
+    if (read(STDIN_FILENO, &c, 1) == 1) {
+      handlePromptInput(c, inputBuffer, promptActive, cursorPosition,
+                        promptType);
+    }
+  }
+
+  return inputBuffer;
+}
+
+void Terminal::handlePromptInput(int c, std::string &inputBuffer,
+                                 bool &promptActive, int &cursorPosition,
+                                 PROMPT_TYPE promptType) {
+  std::string displayBuffer{};
+  switch (c) {
+  case '\r':
+    promptActive = false;
+    break;
+  case '\x1b': // Escape key
+    inputBuffer.clear();
+    promptActive = false;
+    displayBuffer.clear();
+    state.terminalMode = NORMAL; // Return to normal mode
+    setStatusMessage("");
+    editorRefreshScreen();
+    break;
+
+  case 127: // Backspace
+  case CTRL_H:
+    if (cursorPosition > 0) {
+      inputBuffer.erase(inputBuffer.begin() + cursorPosition - 1);
+      cursorPosition--;
+    }
+    break;
+  case ARROW_LEFT:
+    exit(1);
+    if (cursorPosition > 0) {
+      cursorPosition--;
+    }
+    break;
+  case ARROW_RIGHT:
+    if (cursorPosition < inputBuffer.size()) {
+      cursorPosition++;
+    }
+    break;
+  default:
+    if (!iscntrl(c)) {
+      inputBuffer.insert(inputBuffer.begin() + cursorPosition, c);
+      cursorPosition++;
+    }
+  }
+
+  if (promptType == SAVE_FILE) {
+    displayBuffer = "Save as: " + inputBuffer;
+  }
+
+  if (cursorPosition < inputBuffer.size()) {
+    displayBuffer.insert(cursorPosition + 8, "\x1b[7m\x1b[m");
+  }
+  setStatusMessage(displayBuffer);
 }

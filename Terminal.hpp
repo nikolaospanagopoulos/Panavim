@@ -19,6 +19,7 @@ public:
   enum editorKey { ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN };
   enum MODE { NORMAL, INPUT, COMMAND }; // Added NORMAL mode for clarity
   enum FILE_STATUS { MODIFIED, NOT_MODIFIED };
+  enum PROMPT_TYPE { SAVE_FILE };
   enum SPECIAL_KEYS { ESCAPE_KEY = 127, CTRL_H = 8, DEL = 1500 };
   using CommandHandler = std::function<void(Terminal &)>;
   struct editorState {
@@ -57,6 +58,11 @@ public:
   void editorSave();
   void editorDeleteChar();
   void editorInsertNewLineAt(unsigned long at);
+
+  std::string prompt(const std::string &message, PROMPT_TYPE promptType);
+
+  void handlePromptInput(int c, std::string &inputBuffer, bool &promptActive,
+                         int &cursorPosition, PROMPT_TYPE promptType);
 
 private:
   void editorRowInsertChar(Row &row, int at, int c);
