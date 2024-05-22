@@ -87,7 +87,7 @@ void Terminal::editorSave() {
 void Terminal::insertChar(int c) {
   if (state.cy == state.numRow) {
     std::string newRow = "";
-    insertRow(0, newRow);
+    insertRow(state.cy, newRow);
   }
   editorRowInsertChar(state.textRows[state.cy], state.cx, c);
   state.cx++;
@@ -145,16 +145,15 @@ void Terminal::editorUpdateRow(Row &row) {
   }
 }
 
-void Terminal::insertRow(int at, const std::string &line) {
+void Terminal::insertRow(int at, const std::string line) {
 
   if (at < 0 || at > state.numRow) {
     return;
   }
 
   Row row = Row{line, ""};
-
-  editorUpdateRow(row);
-  state.textRows.insert(state.textRows.begin() + at, std::move(row));
+  state.textRows.insert(state.textRows.begin() + at, (row));
+  editorUpdateRow(state.textRows.at(at));
   state.numRow++;
   state.file_status = MODIFIED;
 }
@@ -646,20 +645,20 @@ void Terminal::editorInsertNewLineAt(unsigned long at) { insertRow(at, ""); }
 
 void Terminal::editorInsertNewLine() {
   if (state.cx == 0) {
-    editorInsertNewLineAt(0);
+    editorInsertNewLineAt(state.cy);
   } else {
-    Row &row = state.textRows.at(state.cy);
+    Row &row = state.textRows[state.cy];
+    std::string separated = row.textRow.substr(state.cx);
+    row.textRow.erase(state.cx);
 
-    std::string seperated =
-        row.textRow.substr(state.cx, row.textRow.size() - state.cx);
-    row.textRow.erase(state.cx, state.textRows.size() - state.cx);
-    insertRow(state.cy + 1, seperated);
-    row = state.textRows.at(state.cy);
-    editorUpdateRow(row);
+    insertRow(state.cy + 1, separated);
+    editorUpdateRow(state.textRows[state.cy]);     // Update the current row
+    editorUpdateRow(state.textRows[state.cy + 1]); // Update the new row
   }
   state.cy++;
   state.cx = 0;
 }
+
 std::string Terminal::prompt(const std::string &message,
                              PROMPT_TYPE promptType) {
   setStatusMessage(message);

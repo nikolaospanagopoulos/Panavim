@@ -79,7 +79,7 @@ private:
   void scrollUp();
   void scrollDown();
   void adjustRowOffset();
-  void insertRow(int at, const std::string &line);
+  void insertRow(int at, const std::string line);
   int cxTorx(Row &row, int cx);
   void moveCursorAwordForward();
   void moveCursorAwordBackwards();
