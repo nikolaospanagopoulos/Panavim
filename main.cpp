@@ -58,10 +58,10 @@ int main(int argc, char *argv[]) {
             break;
           }
 
-          if (!terminal.couldBeCommand(terminal.state.commandBuffer,
-                                       std::vector<std::string>{"}", "{", "gg",
-                                                                "G", "_", "$",
-                                                                "w", "b"})) {
+          if (!terminal.couldBeCommand(
+                  terminal.state.commandBuffer,
+                  std::vector<std::string>{"}", "{", "gg", "G", "_", "$", "w",
+                                           "b", "/"})) {
             terminal.state.commandBuffer.clear();
           }
           terminal.executeCommand(terminal.state.commandBuffer);

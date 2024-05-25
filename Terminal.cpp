@@ -1,5 +1,6 @@
 #include "Terminal.hpp"
 #include <cctype>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -316,6 +317,7 @@ Terminal::Terminal()
                   [](Terminal &term) { term.moveCursorToNextLineWithSpace(); });
   registerCommand("{",
                   [](Terminal &term) { term.moveCursorToPrevLineWithSpace(); });
+  registerCommand("/", [](Terminal &term) { term.find(); });
 }
 void Terminal::moveCursorToPrevLineWithSpace() {
   while (state.cy > 0) {
@@ -704,7 +706,6 @@ void Terminal::handlePromptInput(int c, std::string &inputBuffer,
     }
     break;
   case ARROW_LEFT:
-    exit(1);
     if (cursorPosition > 0) {
       cursorPosition--;
     }
@@ -724,9 +725,29 @@ void Terminal::handlePromptInput(int c, std::string &inputBuffer,
   if (promptType == SAVE_FILE) {
     displayBuffer = "Save as: " + inputBuffer;
   }
+  if (promptType == SEARCH) {
+    displayBuffer = "Search: " + inputBuffer;
+  }
 
   if (cursorPosition < inputBuffer.size()) {
     displayBuffer.insert(cursorPosition + 8, "\x1b[7m\x1b[m");
   }
   setStatusMessage(displayBuffer);
+}
+
+void Terminal::find() {
+  std::string query = prompt("Search: %s (ESC TO CANCEL)", SEARCH);
+  if (query.empty()) {
+    return;
+  }
+  for (int i = 0; i < state.textRows.size(); i++) {
+    Row &row = state.textRows.at(i);
+    std::size_t position = row.renderedRow.find(query);
+    if (position != std::string::npos) {
+      state.cy = i;
+      state.cx = position;
+      state.rowOffset = state.numRow;
+      break;
+    }
+  }
 }
