@@ -71,7 +71,7 @@ std::string Terminal::rowsToFinalStr(long *const sizePtr) {
 void Terminal::editorSave() {
   long bufferSize = 0;
   if (state.fileName.empty()) {
-    state.fileName = prompt("Save as: ", PROMPT_TYPE::SAVE_FILE);
+    state.fileName = prompt("Save as: ", PROMPT_TYPE::SAVE_FILE, nullptr);
     if (state.fileName.empty()) {
       setStatusMessage("Save aborted.");
       return;
@@ -80,6 +80,7 @@ void Terminal::editorSave() {
   outFile.open(state.fileName);
   std::string toSaveLines = rowsToFinalStr(&bufferSize);
   outFile << toSaveLines;
+  outFile.close();
   std::string message = std::to_string(bufferSize) + " bytes written to disk";
   setStatusMessage(message);
   state.file_status = NOT_MODIFIED;
@@ -307,6 +308,9 @@ Terminal::Terminal()
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
     throw std::runtime_error("failed to set terminal attributes");
   }
+  registerCommand("n", [](Terminal &term) { term.findNext(); });
+  registerCommand("N", [](Terminal &term) { term.findPrevious(); });
+  registerCommand("gg", [](Terminal &term) { term.scrollUp(); });
   registerCommand("gg", [](Terminal &term) { term.scrollUp(); });
   registerCommand("G", [](Terminal &term) { term.scrollDown(); });
   registerCommand("_", [](Terminal &term) { term.goToBeginningOfLine(); });
@@ -661,21 +665,38 @@ void Terminal::editorInsertNewLine() {
   state.cx = 0;
 }
 
-std::string Terminal::prompt(const std::string &message,
-                             PROMPT_TYPE promptType) {
+std::string Terminal::prompt(const std::string &message, PROMPT_TYPE promptType,
+                             promptCallbackFunc func) {
   setStatusMessage(message);
   std::string inputBuffer;
   int c = '\0';
   bool promptActive = true;
   int cursorPosition = 0;
 
+  // Save the original cursor position
+  int originalCx = state.cx;
+  int originalCy = state.cy;
+
   while (promptActive) {
     editorRefreshScreen();
 
     if (read(STDIN_FILENO, &c, 1) == 1) {
       handlePromptInput(c, inputBuffer, promptActive, cursorPosition,
-                        promptType);
+                        promptType, func);
+
+      // Call the callback function with the current input buffer
+      if (func) {
+        func(inputBuffer);
+      }
     }
+  }
+
+  // Restore the original cursor position if the prompt was cancelled
+  if (c == '\x1b') {
+    state.cx = originalCx;
+    state.cy = originalCy;
+    adjustRowOffset();
+    editorRefreshScreen();
   }
 
   return inputBuffer;
@@ -683,11 +704,13 @@ std::string Terminal::prompt(const std::string &message,
 
 void Terminal::handlePromptInput(int c, std::string &inputBuffer,
                                  bool &promptActive, int &cursorPosition,
-                                 PROMPT_TYPE promptType) {
+                                 PROMPT_TYPE promptType,
+                                 promptCallbackFunc func) {
   std::string displayBuffer{};
   switch (c) {
   case '\r':
     promptActive = false;
+    setStatusMessage("");
     break;
   case '\x1b': // Escape key
     inputBuffer.clear();
@@ -695,9 +718,11 @@ void Terminal::handlePromptInput(int c, std::string &inputBuffer,
     displayBuffer.clear();
     state.terminalMode = NORMAL; // Return to normal mode
     setStatusMessage("");
+    // Restore the original cursor position
+    state.cx = originalCx;
+    state.cy = originalCy;
     editorRefreshScreen();
     break;
-
   case 127: // Backspace
   case CTRL_H:
     if (cursorPosition > 0) {
@@ -736,18 +761,96 @@ void Terminal::handlePromptInput(int c, std::string &inputBuffer,
 }
 
 void Terminal::find() {
-  std::string query = prompt("Search: %s (ESC TO CANCEL)", SEARCH);
+  searchResults.clear();         // Clear previous search results
+  currentSearchResultIndex = -1; // Reset the current search result index
+
+  // Save the original cursor position
+  originalCx = state.cx;
+  originalCy = state.cy;
+
+  std::string query =
+      prompt("Search: ", SEARCH, [this](const std::string &query) {
+        if (query.empty()) {
+          return;
+        }
+
+        // Clear previous search results
+        searchResults.clear();
+        currentSearchResultIndex = -1;
+
+        // Search through the rows and store results
+        for (int i = 0; i < state.textRows.size(); i++) {
+          Row &row = state.textRows.at(i);
+          std::size_t position = row.renderedRow.find(query);
+          while (position != std::string::npos) {
+            searchResults.emplace_back(i, position);
+            position = row.renderedRow.find(query, position + 1);
+          }
+        }
+
+        // Navigate to the first result
+        if (!searchResults.empty()) {
+          currentSearchResultIndex = 0;
+          auto [row, col] = searchResults[currentSearchResultIndex];
+          state.cy = row;
+          state.cx = col;
+          state.rowOffset = row;
+          editorRefreshScreen();
+        }
+      });
+
   if (query.empty()) {
     return;
   }
+
+  lastSearchQuery = query;
+}
+void Terminal::performSearch(const std::string &query) {
+  searchResults.clear();
   for (int i = 0; i < state.textRows.size(); i++) {
     Row &row = state.textRows.at(i);
     std::size_t position = row.renderedRow.find(query);
-    if (position != std::string::npos) {
-      state.cy = i;
-      state.cx = position;
-      state.rowOffset = state.numRow;
-      break;
+    while (position != std::string::npos) {
+      searchResults.emplace_back(i, position);
+      position = row.renderedRow.find(query, position + 1);
     }
   }
+  lastSearchQuery = query;
+}
+void Terminal::findNext() {
+  if (searchResults.empty() && !lastSearchQuery.empty()) {
+    performSearch(lastSearchQuery);
+  }
+  if (searchResults.empty())
+    return;
+
+  currentSearchResultIndex++;
+  if (currentSearchResultIndex >= searchResults.size()) {
+    currentSearchResultIndex = 0;
+  }
+
+  auto [row, col] = searchResults[currentSearchResultIndex];
+  state.cy = row;
+  state.cx = col;
+  state.rowOffset = row;
+  editorRefreshScreen();
+}
+
+void Terminal::findPrevious() {
+  if (searchResults.empty() && !lastSearchQuery.empty()) {
+    performSearch(lastSearchQuery);
+  }
+  if (searchResults.empty())
+    return;
+
+  currentSearchResultIndex--;
+  if (currentSearchResultIndex < 0) {
+    currentSearchResultIndex = searchResults.size() - 1;
+  }
+
+  auto [row, col] = searchResults[currentSearchResultIndex];
+  state.cy = row;
+  state.cx = col;
+  state.rowOffset = row;
+  editorRefreshScreen();
 }

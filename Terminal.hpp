@@ -60,11 +60,23 @@ public:
   void editorDeleteChar();
   void editorInsertNewLineAt(unsigned long at);
 
-  std::string prompt(const std::string &message, PROMPT_TYPE promptType);
+  using promptCallbackFunc = std::function<void(const std::string &)>;
+  std::vector<std::pair<int, int>>
+      searchResults;            // Vector to store search results (row, col)
+  int currentSearchResultIndex; // Index to track the current search result
+  std::string lastSearchQuery;  // Store the last search query
+  int originalCx, originalCy;
+
+  std::string prompt(const std::string &message, PROMPT_TYPE promptType,
+                     promptCallbackFunc func);
 
   void handlePromptInput(int c, std::string &inputBuffer, bool &promptActive,
-                         int &cursorPosition, PROMPT_TYPE promptType);
+                         int &cursorPosition, PROMPT_TYPE promptType,
+                         promptCallbackFunc func = nullptr);
   void find();
+  void findPrevious();
+  void findNext();
+  void performSearch(const std::string &query);
 
 private:
   void editorRowInsertChar(Row &row, int at, int c);
