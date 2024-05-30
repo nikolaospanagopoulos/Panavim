@@ -107,4 +107,6 @@ private:
   void editorDeleteRow(int at);
   void editorRowAppendString(Row &row, std::string &toAppend);
   void editorInsertNewLine();
+  void inputAtEndOfLine();
+  void inputAtbeginningOfLine();
 };

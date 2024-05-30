@@ -61,7 +61,8 @@ int main(int argc, char *argv[]) {
           if (!terminal.couldBeCommand(
                   terminal.state.commandBuffer,
                   std::vector<std::string>{"}", "{", "gg", "G", "_", "$", "w",
-                                           "b", "/", "n", "N"})) {
+                                           "b", "/", "n", "N", "A", "I", "o",
+                                           "O"})) {
             terminal.state.commandBuffer.clear();
           }
           terminal.executeCommand(terminal.state.commandBuffer);

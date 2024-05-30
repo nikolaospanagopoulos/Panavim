@@ -322,6 +322,31 @@ Terminal::Terminal()
   registerCommand("{",
                   [](Terminal &term) { term.moveCursorToPrevLineWithSpace(); });
   registerCommand("/", [](Terminal &term) { term.find(); });
+  registerCommand("A", [](Terminal &term) { term.inputAtEndOfLine(); });
+  registerCommand("I", [](Terminal &term) { term.inputAtbeginningOfLine(); });
+}
+void Terminal::inputAtEndOfLine() {
+  if (state.cy < state.numRow) {
+    state.cx = state.textRows.at(state.cy).textRow.size();
+  }
+  if (state.cy == state.numRow) {
+    state.cx = 0;
+  }
+  state.terminalMode = INPUT;
+  enterInputMode();
+}
+void Terminal::inputAtbeginningOfLine() {
+  if (state.cy < state.numRow) {
+    state.cx = 0;
+    while (std::isspace(state.textRows.at(state.cy).textRow.at(state.cx))) {
+      state.cx++;
+    }
+  }
+  if (state.cy == state.numRow) {
+    state.cx = 0;
+  }
+  state.terminalMode = INPUT;
+  enterInputMode();
 }
 void Terminal::moveCursorToPrevLineWithSpace() {
   while (state.cy > 0) {
