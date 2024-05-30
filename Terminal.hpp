@@ -109,4 +109,6 @@ private:
   void editorInsertNewLine();
   void inputAtEndOfLine();
   void inputAtbeginningOfLine();
+  void insertNewRowUnderCursorAndEnterInputMode();
+  void insertNewRowAboveCursorAndEnterInputMode();
 };

@@ -311,7 +311,6 @@ Terminal::Terminal()
   registerCommand("n", [](Terminal &term) { term.findNext(); });
   registerCommand("N", [](Terminal &term) { term.findPrevious(); });
   registerCommand("gg", [](Terminal &term) { term.scrollUp(); });
-  registerCommand("gg", [](Terminal &term) { term.scrollUp(); });
   registerCommand("G", [](Terminal &term) { term.scrollDown(); });
   registerCommand("_", [](Terminal &term) { term.goToBeginningOfLine(); });
   registerCommand("$", [](Terminal &term) { term.goToTheEndOfLine(); });
@@ -324,6 +323,34 @@ Terminal::Terminal()
   registerCommand("/", [](Terminal &term) { term.find(); });
   registerCommand("A", [](Terminal &term) { term.inputAtEndOfLine(); });
   registerCommand("I", [](Terminal &term) { term.inputAtbeginningOfLine(); });
+  registerCommand("o", [](Terminal &term) {
+    term.insertNewRowUnderCursorAndEnterInputMode();
+  });
+  registerCommand("O", [](Terminal &term) {
+    term.insertNewRowAboveCursorAndEnterInputMode();
+  });
+}
+
+void Terminal::insertNewRowAboveCursorAndEnterInputMode() {
+  insertRow(state.cy, "");
+  state.cx = 0;
+  state.terminalMode = INPUT;
+  enterInputMode();
+}
+void Terminal::insertNewRowUnderCursorAndEnterInputMode() {
+  if (state.cy == state.numRow) {
+    state.cx = 0;
+    state.terminalMode = INPUT;
+    enterInputMode();
+    return;
+  }
+  if (state.cy >= 0) {
+    insertRow(state.cy + 1, "");
+    state.cy++;
+    state.cx = 0;
+    state.terminalMode = INPUT;
+    enterInputMode();
+  }
 }
 void Terminal::inputAtEndOfLine() {
   if (state.cy < state.numRow) {
