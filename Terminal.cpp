@@ -164,7 +164,6 @@ void Terminal::editorOpen(const char *fileName) {
   inFile.open(fileName);
   this->state.fileName = fileName;
   if (!inFile) {
-    throw std::runtime_error("failed to get open file");
   }
   std::string line = {};
   while (std::getline(inFile, line)) {

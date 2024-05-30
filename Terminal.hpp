@@ -81,7 +81,7 @@ public:
 private:
   void editorRowInsertChar(Row &row, int at, int c);
   void editorUpdateRow(Row &row);
-  std::ifstream inFile;
+  std::fstream inFile;
   std::ofstream outFile;
   void goToBeginningOfLine();
   void goToTheEndOfLine();
