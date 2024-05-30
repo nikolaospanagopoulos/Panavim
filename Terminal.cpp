@@ -251,7 +251,17 @@ void Terminal::drawStatusBar() {
   buffer.append("\x1b[m");
   buffer.append("\r\n");
 }
-void Terminal::goToBeginningOfLine() { state.cx = 0; }
+void Terminal::goToBeginningOfLine() {
+  if (state.cy < state.numRow) {
+    state.cx = 0;
+    while (std::isspace(state.textRows.at(state.cy).textRow.at(state.cx))) {
+      state.cx++;
+    }
+  }
+  if (state.cy == state.numRow) {
+    state.cx = 0;
+  }
+}
 
 void Terminal::setStatusMessage(std::string msg) {
   state.statusMsg.clear();
